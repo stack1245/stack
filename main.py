@@ -210,7 +210,105 @@ async def set_memo(
         await ctx.respond("❌ 메모 작성 중 오류가 발생했습니다.", ephemeral=True)
 
 
+@admin.command(name="로그채널설정", description="[관리자] 로그를 보낼 채널을 설정합니다")
+@commands.has_permissions(administrator=True)
+async def set_log_channel(
+    ctx: discord.ApplicationContext,
+    채널: discord.TextChannel = Option(discord.TextChannel, description="로그를 보낼 채널", required=True)
+):
+    guild_id = str(ctx.guild.id)
+    channel_id = str(채널.id)
+    
+    success = await db.set_log_channel(guild_id, channel_id)
+    
+    if success:
+        embed = discord.Embed(
+            title="✅ 로그 채널 설정 완료",
+            description=f"로그가 {채널.mention} 채널로 전송됩니다.",
+            color=discord.Color.green(),
+            timestamp=datetime.now()
+        )
+        embed.set_footer(text=f"설정자: {ctx.author}")
+        await ctx.respond(embed=embed, ephemeral=True)
+    else:
+        await ctx.respond("❌ 로그 채널 설정 중 오류가 발생했습니다.", ephemeral=True)
+
+
 bot.add_application_command(admin)
+
+
+async def send_log(guild: discord.Guild, embed: discord.Embed):
+    """로그 채널에 embed 전송"""
+    try:
+        guild_id = str(guild.id)
+        log_channel_id = await db.get_log_channel(guild_id)
+        
+        if log_channel_id:
+            channel = guild.get_channel(int(log_channel_id))
+            if channel:
+                await channel.send(embed=embed)
+    except Exception as e:
+        print(f"[로그 전송 오류] {e}")
+
+
+@bot.event
+async def on_member_join(member: discord.Member):
+    """유저 입장 로그"""
+    embed = discord.Embed(
+        title="📥 유저 입장",
+        description=f"{member.mention}님이 서버에 입장했습니다.",
+        color=discord.Color.green(),
+        timestamp=datetime.now()
+    )
+    embed.add_field(name="유저", value=f"{member} ({member.id})", inline=False)
+    embed.add_field(name="계정 생성일", value=member.created_at.strftime("%Y-%m-%d %H:%M"), inline=True)
+    embed.set_thumbnail(url=member.display_avatar.url)
+    
+    await send_log(member.guild, embed)
+
+
+@bot.event
+async def on_member_remove(member: discord.Member):
+    """유저 퇴장 로그"""
+    embed = discord.Embed(
+        title="📤 유저 퇴장",
+        description=f"{member.mention}님이 서버에서 퇴장했습니다.",
+        color=discord.Color.red(),
+        timestamp=datetime.now()
+    )
+    embed.add_field(name="유저", value=f"{member} ({member.id})", inline=False)
+    if member.joined_at:
+        embed.add_field(name="서버 가입일", value=member.joined_at.strftime("%Y-%m-%d %H:%M"), inline=True)
+    embed.set_thumbnail(url=member.display_avatar.url)
+    
+    await send_log(member.guild, embed)
+
+
+@bot.event
+async def on_message_delete(message: discord.Message):
+    """메시지 삭제 로그"""
+    if message.author.bot or not message.guild:
+        return
+    
+    embed = discord.Embed(
+        title="🗑️ 메시지 삭제",
+        description=f"{message.author.mention}님의 메시지가 삭제되었습니다.",
+        color=discord.Color.orange(),
+        timestamp=datetime.now()
+    )
+    embed.add_field(name="작성자", value=f"{message.author} ({message.author.id})", inline=False)
+    embed.add_field(name="채널", value=message.channel.mention, inline=True)
+    
+    content = message.content[:1000] if message.content else "_내용 없음_"
+    embed.add_field(name="삭제된 내용", value=content, inline=False)
+    
+    if message.attachments:
+        attachments_info = "\n".join([f"[{att.filename}]({att.url})" for att in message.attachments[:5]])
+        embed.add_field(name="첨부파일", value=attachments_info, inline=False)
+    
+    embed.set_thumbnail(url=message.author.display_avatar.url)
+    
+    await send_log(message.guild, embed)
 
 
 @bot.event

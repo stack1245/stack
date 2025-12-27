@@ -32,6 +32,14 @@ class Database:
                 )
             """)
             
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS server_settings (
+                    guild_id TEXT PRIMARY KEY,
+                    log_channel_id TEXT,
+                    updated_at TEXT
+                )
+            """)
+            
             await db.commit()
     
     async def register_profile(self, user_id: str, username: str, display_name: str, 
@@ -139,3 +147,42 @@ class Database:
         except Exception as e:
             print(f"[DB 오류] 메모 작성: {e}")
             return False
+    
+    async def set_log_channel(self, guild_id: str, channel_id: str) -> bool:
+        try:
+            now = datetime.now().isoformat()
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    "SELECT guild_id FROM server_settings WHERE guild_id = ?", (guild_id,)
+                )
+                existing = await cursor.fetchone()
+                
+                if existing:
+                    await db.execute("""
+                        UPDATE server_settings 
+                        SET log_channel_id = ?, updated_at = ?
+                        WHERE guild_id = ?
+                    """, (channel_id, now, guild_id))
+                else:
+                    await db.execute("""
+                        INSERT INTO server_settings (guild_id, log_channel_id, updated_at)
+                        VALUES (?, ?, ?)
+                    """, (guild_id, channel_id, now))
+                
+                await db.commit()
+                return True
+        except Exception as e:
+            print(f"[DB 오류] 로그 채널 설정: {e}")
+            return False
+    
+    async def get_log_channel(self, guild_id: str) -> Optional[str]:
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    "SELECT log_channel_id FROM server_settings WHERE guild_id = ?", (guild_id,)
+                )
+                row = await cursor.fetchone()
+                return row[0] if row else None
+        except Exception as e:
+            print(f"[DB 오류] 로그 채널 조회: {e}")
+            return None
