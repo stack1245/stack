@@ -25,7 +25,7 @@ cp .env.example .env
 
 `.env` 파일에 봇 토큰 입력:
 ```
-DISCORD_BOT_TOKEN=your_bot_token_here
+DISCORD_TOKEN_TOKEN=your_bot_token_here
 ```
 
 ## 실행

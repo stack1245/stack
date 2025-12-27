@@ -504,6 +504,6 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
 
 if __name__ == "__main__":
     if not config.BOT_TOKEN:
-        print("[오류] DISCORD_BOT_TOKEN이 설정되지 않았습니다. .env 파일을 확인해주세요.")
+        print("[오류] 토큰이 설정되지 않았습니다. .env 파일을 확인해주세요.")
     else:
         bot.run(config.BOT_TOKEN)
