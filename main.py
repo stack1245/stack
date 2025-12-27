@@ -69,6 +69,59 @@ async def register_profile(
         await ctx.respond("❌ 프로필 등록 중 오류가 발생했습니다.", ephemeral=True)
 
 
+@bot.slash_command(name="프로필목록", description="등록된 모든 유저의 프로필 목록을 조회합니다")
+async def list_profiles(ctx: discord.ApplicationContext):
+    await ctx.defer()
+    
+    profiles = await db.get_all_profiles()
+    
+    if not profiles:
+        await ctx.respond("❌ 등록된 프로필이 없습니다.", ephemeral=True)
+        return
+    
+    # 페이지당 15명씩 표시
+    items_per_page = 15
+    total_pages = (len(profiles) - 1) // items_per_page + 1
+    
+    embeds = []
+    for page in range(total_pages):
+        start_idx = page * items_per_page
+        end_idx = min(start_idx + items_per_page, len(profiles))
+        page_profiles = profiles[start_idx:end_idx]
+        
+        embed = discord.Embed(
+            title="📋 등록된 프로필 목록",
+            description=f"총 {len(profiles)}명의 프로필이 등록되어 있습니다.",
+            color=discord.Color.blue(),
+            timestamp=datetime.now()
+        )
+        
+        # 프로필 목록 작성
+        profile_list = []
+        for i, profile in enumerate(page_profiles, start=start_idx + 1):
+            user_mention = f"<@{profile['user_id']}>"
+            display_name = profile['display_name']
+            profile_list.append(f"{i}. **{display_name}** - {user_mention}")
+        
+        embed.add_field(
+            name="유저 목록",
+            value="\n".join(profile_list),
+            inline=False
+        )
+        
+        if total_pages > 1:
+            embed.set_footer(text=f"페이지 {page + 1}/{total_pages}")
+        
+        embeds.append(embed)
+    
+    # 페이지가 1개면 그냥 전송, 여러 개면 페이지네이션 사용
+    if len(embeds) == 1:
+        await ctx.respond(embed=embeds[0])
+    else:
+        # 간단한 페이지네이션: 첫 페이지만 표시
+        await ctx.respond(embed=embeds[0])
+
+
 @bot.slash_command(name="정보", description="유저의 프로필 정보를 조회합니다")
 async def get_info(
     ctx: discord.ApplicationContext,

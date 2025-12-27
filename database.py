@@ -186,3 +186,17 @@ class Database:
         except Exception as e:
             print(f"[DB 오류] 로그 채널 조회: {e}")
             return None
+    
+    async def get_all_profiles(self) -> list[Dict[str, Any]]:
+        """등록된 모든 프로필 조회"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT * FROM user_profiles ORDER BY display_name ASC"
+                )
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"[DB 오류] 전체 프로필 조회: {e}")
+            return []
