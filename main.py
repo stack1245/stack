@@ -381,6 +381,41 @@ async def on_message_delete(message: discord.Message):
 
 
 @bot.event
+async def on_message_edit(before: discord.Message, after: discord.Message):
+    """메시지 수정 로그"""
+    if before.author.bot or not before.guild:
+        return
+    
+    # 내용이 실제로 변경되지 않은 경우 무시 (embed 업데이트 등)
+    if before.content == after.content:
+        return
+    
+    embed = discord.Embed(
+        title="✏️ 메시지 수정",
+        description=f"{before.author.mention}님이 메시지를 수정했습니다.",
+        color=discord.Color.blue(),
+        timestamp=datetime.now()
+    )
+    embed.add_field(name="작성자", value=f"{before.author} ({before.author.id})", inline=False)
+    embed.add_field(name="채널", value=before.channel.mention, inline=True)
+    
+    # 수정 전 내용
+    before_content = before.content[:1000] if before.content else "_내용 없음_"
+    embed.add_field(name="수정 전", value=before_content, inline=False)
+    
+    # 수정 후 내용
+    after_content = after.content[:1000] if after.content else "_내용 없음_"
+    embed.add_field(name="수정 후", value=after_content, inline=False)
+    
+    # 메시지 링크 추가
+    embed.add_field(name="메시지 링크", value=f"[바로가기]({after.jump_url})", inline=False)
+    
+    embed.set_thumbnail(url=before.author.display_avatar.url)
+    
+    await send_log(before.guild, embed)
+
+
+@bot.event
 async def on_application_command_error(ctx: discord.ApplicationContext, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.respond("❌ 이 명령어를 사용할 권한이 없습니다.", ephemeral=True)
