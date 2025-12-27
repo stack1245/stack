@@ -245,18 +245,35 @@ async def clear_messages(
     
     try:
         if 유저:
-            # 특정 유저의 메시지만 삭제
-            def check_user(m):
-                return m.author.id == 유저.id
+            # 특정 유저의 메시지만 정확히 개수만큼 삭제
+            messages_to_delete = []
+            search_limit = 1000  # 최대 탐색할 메시지 수
             
-            deleted = await ctx.channel.purge(limit=개수, check=check_user)
+            async for message in ctx.channel.history(limit=search_limit):
+                if message.author.id == 유저.id:
+                    messages_to_delete.append(message)
+                    if len(messages_to_delete) >= 개수:
+                        break
+            
+            if messages_to_delete:
+                await ctx.channel.delete_messages(messages_to_delete)
+                deleted_count = len(messages_to_delete)
+            else:
+                deleted_count = 0
             
             embed = discord.Embed(
                 title="🧹 메시지 청소 완료",
-                description=f"{유저.mention}님의 메시지 {len(deleted)}개가 삭제되었습니다.",
+                description=f"{유저.mention}님의 메시지 {deleted_count}개가 삭제되었습니다.",
                 color=discord.Color.green(),
                 timestamp=datetime.now()
             )
+            
+            if deleted_count < 개수:
+                embed.add_field(
+                    name="⚠️ 알림", 
+                    value=f"최근 {search_limit}개 메시지 중 {deleted_count}개만 찾았습니다.", 
+                    inline=False
+                )
         else:
             # 모든 메시지 삭제
             deleted = await ctx.channel.purge(limit=개수)
