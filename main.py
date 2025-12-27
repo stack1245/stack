@@ -336,13 +336,36 @@ async def on_message_delete(message: discord.Message):
     if message.author.bot or not message.guild:
         return
     
-    embed = discord.Embed(
-        title="🗑️ 메시지 삭제",
-        description=f"{message.author.mention}님의 메시지가 삭제되었습니다.",
-        color=discord.Color.orange(),
-        timestamp=datetime.now()
-    )
-    embed.add_field(name="작성자", value=f"{message.author} ({message.author.id})", inline=False)
+    # Audit Log를 확인하여 삭제자 찾기
+    deleter = None
+    try:
+        async for entry in message.guild.audit_logs(limit=5, action=discord.AuditLogAction.message_delete):
+            if entry.target.id == message.author.id and (datetime.now() - entry.created_at).total_seconds() < 3:
+                deleter = entry.user
+                break
+    except (discord.Forbidden, discord.HTTPException):
+        pass
+    
+    # 삭제자가 작성자와 다른 경우 (타인이 삭제)
+    if deleter and deleter.id != message.author.id:
+        embed = discord.Embed(
+            title="🗑️ 메시지 삭제 (관리자)",
+            description=f"{message.author.mention}님의 메시지가 {deleter.mention}님에 의해 삭제되었습니다.",
+            color=discord.Color.red(),
+            timestamp=datetime.now()
+        )
+        embed.add_field(name="작성자", value=f"{message.author} ({message.author.id})", inline=True)
+        embed.add_field(name="삭제자", value=f"{deleter} ({deleter.id})", inline=True)
+    else:
+        # 작성자 본인이 삭제
+        embed = discord.Embed(
+            title="🗑️ 메시지 삭제",
+            description=f"{message.author.mention}님의 메시지가 삭제되었습니다.",
+            color=discord.Color.orange(),
+            timestamp=datetime.now()
+        )
+        embed.add_field(name="작성자", value=f"{message.author} ({message.author.id})", inline=False)
+    
     embed.add_field(name="채널", value=message.channel.mention, inline=True)
     
     content = message.content[:1000] if message.content else "_내용 없음_"
