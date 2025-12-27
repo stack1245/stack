@@ -17,6 +17,11 @@ db = Database(config.DATABASE_PATH)
 @bot.event
 async def on_ready():
     await db.init_db()
+    
+    # 커스텀 활동 설정
+    activity = discord.Activity(type=discord.ActivityType.playing, name="기록 남기는 중...")
+    await bot.change_presence(activity=activity, status=discord.Status.online)
+    
     print(f"[{bot.user.name}] 준비 완료")
 
 
