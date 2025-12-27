@@ -418,7 +418,7 @@ async def on_message_delete(message: discord.Message):
     deleter = None
     try:
         async for entry in message.guild.audit_logs(limit=5, action=discord.AuditLogAction.message_delete):
-            if entry.target.id == message.author.id and (datetime.now() - entry.created_at).total_seconds() < 3:
+            if entry.target.id == message.author.id and (discord.utils.utcnow() - entry.created_at).total_seconds() < 3:
                 deleter = entry.user
                 break
     except (discord.Forbidden, discord.HTTPException):
