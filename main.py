@@ -234,6 +234,52 @@ async def set_log_channel(
         await ctx.respond("❌ 로그 채널 설정 중 오류가 발생했습니다.", ephemeral=True)
 
 
+@admin.command(name="청소", description="[관리자] 채널의 메시지를 삭제합니다")
+@commands.has_permissions(administrator=True)
+async def clear_messages(
+    ctx: discord.ApplicationContext,
+    개수: int = Option(int, description="삭제할 메시지 개수", required=True, min_value=1, max_value=100),
+    유저: discord.Member = Option(discord.Member, description="특정 유저의 메시지만 삭제", required=False, default=None)
+):
+    await ctx.defer(ephemeral=True)
+    
+    try:
+        if 유저:
+            # 특정 유저의 메시지만 삭제
+            def check_user(m):
+                return m.author.id == 유저.id
+            
+            deleted = await ctx.channel.purge(limit=개수, check=check_user)
+            
+            embed = discord.Embed(
+                title="🧹 메시지 청소 완료",
+                description=f"{유저.mention}님의 메시지 {len(deleted)}개가 삭제되었습니다.",
+                color=discord.Color.green(),
+                timestamp=datetime.now()
+            )
+        else:
+            # 모든 메시지 삭제
+            deleted = await ctx.channel.purge(limit=개수)
+            
+            embed = discord.Embed(
+                title="🧹 메시지 청소 완료",
+                description=f"{len(deleted)}개의 메시지가 삭제되었습니다.",
+                color=discord.Color.green(),
+                timestamp=datetime.now()
+            )
+        
+        embed.add_field(name="채널", value=ctx.channel.mention, inline=True)
+        embed.add_field(name="실행자", value=ctx.author.mention, inline=True)
+        embed.set_footer(text=f"처리자: {ctx.author}")
+        
+        await ctx.respond(embed=embed, ephemeral=True)
+        
+    except discord.Forbidden:
+        await ctx.respond("❌ 메시지를 삭제할 권한이 없습니다.", ephemeral=True)
+    except discord.HTTPException as e:
+        await ctx.respond(f"❌ 메시지 삭제 중 오류가 발생했습니다: {e}", ephemeral=True)
+
+
 bot.add_application_command(admin)
 
 
