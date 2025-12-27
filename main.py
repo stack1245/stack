@@ -2,9 +2,12 @@ import discord
 from discord.ext import commands
 from discord import Option, SlashCommandGroup
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import config
 from database import Database
 
+# 한국 표준시 (KST) 설정
+KST = ZoneInfo("Asia/Seoul")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -60,7 +63,7 @@ async def register_profile(
             title=title,
             description="프로필이 성공적으로 등록되었습니다!",
             color=discord.Color.green(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         if not is_self:
             embed.add_field(name="대상 유저", value=target_user.mention, inline=False)
@@ -98,7 +101,7 @@ async def list_profiles(ctx: discord.ApplicationContext):
             title="📋 등록된 프로필 목록",
             description=f"총 {len(profiles)}명의 프로필이 등록되어 있습니다.",
             color=discord.Color.blue(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         
         # 프로필 목록 작성
@@ -144,7 +147,7 @@ async def get_info(
     embed = discord.Embed(
         title=f"📋 {profile['display_name']}님의 프로필",
         color=discord.Color.blue(),
-        timestamp=datetime.now()
+        timestamp=datetime.now(KST)
     )
     
     embed.set_thumbnail(url=target_user.display_avatar.url)
@@ -196,7 +199,7 @@ async def add_warning(
             title="⚠️ 경고 추가",
             description=f"{유저.mention}님에게 경고 {횟수}회가 추가되었습니다.",
             color=discord.Color.orange(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         embed.add_field(name="총 경고 횟수", value=f"{total_warnings}회", inline=False)
         embed.set_footer(text=f"처리자: {ctx.author}")
@@ -229,7 +232,7 @@ async def remove_warning(
             title="✅ 경고 제거",
             description=f"{유저.mention}님의 경고 {횟수}회가 제거되었습니다.",
             color=discord.Color.green(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         embed.add_field(name="남은 경고 횟수", value=f"{total_warnings}회", inline=False)
         embed.set_footer(text=f"처리자: {ctx.author}")
@@ -259,7 +262,7 @@ async def set_memo(
             title="📝 메모 작성 완료",
             description=f"{유저.mention}님에 대한 메모가 작성되었습니다.",
             color=discord.Color.blue(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         embed.add_field(name="메모 내용", value=메모, inline=False)
         embed.set_footer(text=f"작성자: {ctx.author}")
@@ -284,7 +287,7 @@ async def set_log_channel(
             title="✅ 로그 채널 설정 완료",
             description=f"로그가 {채널.mention} 채널로 전송됩니다.",
             color=discord.Color.green(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         embed.set_footer(text=f"설정자: {ctx.author}")
         await ctx.respond(embed=embed, ephemeral=True)
@@ -323,7 +326,7 @@ async def clear_messages(
                 title="🧹 메시지 청소 완료",
                 description=f"{유저.mention}님의 메시지 {deleted_count}개가 삭제되었습니다.",
                 color=discord.Color.green(),
-                timestamp=datetime.now()
+                timestamp=datetime.now(KST)
             )
             
             if deleted_count < 개수:
@@ -340,7 +343,7 @@ async def clear_messages(
                 title="🧹 메시지 청소 완료",
                 description=f"{len(deleted)}개의 메시지가 삭제되었습니다.",
                 color=discord.Color.green(),
-                timestamp=datetime.now()
+                timestamp=datetime.now(KST)
             )
         
         embed.add_field(name="채널", value=ctx.channel.mention, inline=True)
@@ -379,10 +382,10 @@ async def on_member_join(member: discord.Member):
         title="📥 유저 입장",
         description=f"{member.mention}님이 서버에 입장했습니다.",
         color=discord.Color.green(),
-        timestamp=datetime.now()
+        timestamp=datetime.now(KST)
     )
     embed.add_field(name="유저", value=f"{member} ({member.id})", inline=False)
-    embed.add_field(name="계정 생성일", value=member.created_at.strftime("%Y-%m-%d %H:%M"), inline=True)
+    embed.add_field(name="계정 생성일", value=member.created_at.astimezone(KST).strftime("%Y-%m-%d %H:%M"), inline=True)
     embed.set_thumbnail(url=member.display_avatar.url)
     
     await send_log(member.guild, embed)
@@ -395,11 +398,11 @@ async def on_member_remove(member: discord.Member):
         title="📤 유저 퇴장",
         description=f"{member.mention}님이 서버에서 퇴장했습니다.",
         color=discord.Color.red(),
-        timestamp=datetime.now()
+        timestamp=datetime.now(KST)
     )
     embed.add_field(name="유저", value=f"{member} ({member.id})", inline=False)
     if member.joined_at:
-        embed.add_field(name="서버 가입일", value=member.joined_at.strftime("%Y-%m-%d %H:%M"), inline=True)
+        embed.add_field(name="서버 가입일", value=member.joined_at.astimezone(KST).strftime("%Y-%m-%d %H:%M"), inline=True)
     embed.set_thumbnail(url=member.display_avatar.url)
     
     await send_log(member.guild, embed)
@@ -415,7 +418,7 @@ async def on_message_delete(message: discord.Message):
     deleter = None
     try:
         async for entry in message.guild.audit_logs(limit=5, action=discord.AuditLogAction.message_delete):
-            if entry.target.id == message.author.id and (discord.utils.utcnow() - entry.created_at).total_seconds() < 3:
+            if entry.target.id == message.author.id and (datetime.now() - entry.created_at).total_seconds() < 3:
                 deleter = entry.user
                 break
     except (discord.Forbidden, discord.HTTPException):
@@ -427,7 +430,7 @@ async def on_message_delete(message: discord.Message):
             title="🗑️ 메시지 삭제 (관리자)",
             description=f"{message.author.mention}님의 메시지가 {deleter.mention}님에 의해 삭제되었습니다.",
             color=discord.Color.red(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         embed.add_field(name="작성자", value=f"{message.author} ({message.author.id})", inline=True)
         embed.add_field(name="삭제자", value=f"{deleter} ({deleter.id})", inline=True)
@@ -437,7 +440,7 @@ async def on_message_delete(message: discord.Message):
             title="🗑️ 메시지 삭제",
             description=f"{message.author.mention}님의 메시지가 삭제되었습니다.",
             color=discord.Color.orange(),
-            timestamp=datetime.now()
+            timestamp=datetime.now(KST)
         )
         embed.add_field(name="작성자", value=f"{message.author} ({message.author.id})", inline=False)
     
@@ -469,7 +472,7 @@ async def on_message_edit(before: discord.Message, after: discord.Message):
         title="✏️ 메시지 수정",
         description=f"{before.author.mention}님이 메시지를 수정했습니다.",
         color=discord.Color.blue(),
-        timestamp=datetime.now()
+        timestamp=datetime.now(KST)
     )
     embed.add_field(name="작성자", value=f"{before.author} ({before.author.id})", inline=False)
     embed.add_field(name="채널", value=before.channel.mention, inline=True)
