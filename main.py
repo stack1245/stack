@@ -20,16 +20,23 @@ async def on_ready():
     print(f"[{bot.user.name}] 준비 완료")
 
 
-@bot.slash_command(name="프로필등록", description="자신의 프로필을 등록하거나 수정합니다")
+@bot.slash_command(name="프로필등록", description="프로필을 등록하거나 수정합니다")
 async def register_profile(
     ctx: discord.ApplicationContext,
     닉네임: str = Option(str, description="표시될 닉네임 또는 이름", required=True),
     출생년도: str = Option(str, description="출생년도 (예: 2008 또는 08)", required=True),
     성별: str = Option(str, description="성별", choices=["남", "여", "기타", "비공개"], required=True),
-    지역: str = Option(str, description="거주 지역 (예: 서울, 부산 등)", required=True)
+    지역: str = Option(str, description="거주 지역 (예: 서울, 부산 등)", required=True),
+    유저: discord.Member = Option(discord.Member, description="프로필을 설정할 유저 (관리자 전용)", required=False, default=None)
 ):
-    user_id = str(ctx.author.id)
-    username = str(ctx.author)
+    target_user = 유저 if 유저 else ctx.author
+    
+    if target_user.id != ctx.author.id and not ctx.author.guild_permissions.administrator:
+        await ctx.respond("❌ 다른 유저의 프로필을 수정하려면 관리자 권한이 필요합니다.", ephemeral=True)
+        return
+    
+    user_id = str(target_user.id)
+    username = str(target_user)
     
     success = await db.register_profile(
         user_id=user_id,
@@ -41,12 +48,17 @@ async def register_profile(
     )
     
     if success:
+        is_self = target_user.id == ctx.author.id
+        title = "✅ 프로필 등록 완료" if is_self else f"✅ {target_user.display_name}님의 프로필 등록 완료"
+        
         embed = discord.Embed(
-            title="✅ 프로필 등록 완료",
+            title=title,
             description="프로필이 성공적으로 등록되었습니다!",
             color=discord.Color.green(),
             timestamp=datetime.now()
         )
+        if not is_self:
+            embed.add_field(name="대상 유저", value=target_user.mention, inline=False)
         embed.add_field(name="닉네임", value=닉네임, inline=True)
         embed.add_field(name="출생년도", value=출생년도, inline=True)
         embed.add_field(name="성별", value=성별, inline=True)
