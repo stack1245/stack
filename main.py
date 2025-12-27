@@ -17,7 +17,7 @@ db = Database(config.DATABASE_PATH)
 @bot.event
 async def on_ready():
     await db.init_db()
-    print(f"프로필 관리 봇 준비 완료")
+    print(f"{bot.user.name} 준비 완료")
 
 
 @bot.slash_command(name="프로필등록", description="자신의 프로필을 등록하거나 수정합니다")
