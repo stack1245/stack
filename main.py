@@ -12,6 +12,8 @@ KST = ZoneInfo("Asia/Seoul")
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.messages = True
+intents.guilds = True
 
 bot = discord.Bot(intents=intents)
 db = Database(config.DATABASE_PATH)
