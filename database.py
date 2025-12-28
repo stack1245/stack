@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 
 
 class Database:
-    def __init__(self, db_path: str = "data.db"):
+    def __init__(self, db_path: str = "user_profiles.db"):
         self.db_path = db_path
     
     async def init_db(self):
