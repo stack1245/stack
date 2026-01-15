@@ -1,49 +1,70 @@
+"""SQLite 데이터베이스 기반 데이터 관리"""
+from __future__ import annotations
+import logging
 import aiosqlite
 from datetime import datetime
-from typing import Optional, Dict, Any
+from pathlib import Path
+from typing import Any
+import discord
+
+from .constants import DATA_DIR, DEFAULT_SETTINGS
+
+logger = logging.getLogger(__name__)
 
 
-class Database:
-    def __init__(self, db_path: str = "stack_bot.db"):
-        self.db_path = db_path
+class DataManager:
+    """SQLite 기반 데이터 관리"""
     
-    async def init_db(self):
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS user_profiles (
-                    user_id TEXT PRIMARY KEY,
-                    username TEXT NOT NULL,
-                    display_name TEXT,
-                    birth_year TEXT,
-                    gender TEXT,
-                    region TEXT,
-                    registered_at TEXT,
-                    updated_at TEXT
-                )
-            """)
-            
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS admin_info (
-                    user_id TEXT PRIMARY KEY,
-                    warning_count INTEGER DEFAULT 0,
-                    admin_memo TEXT,
-                    updated_at TEXT,
-                    FOREIGN KEY (user_id) REFERENCES user_profiles (user_id)
-                )
-            """)
-            
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS server_settings (
-                    guild_id TEXT PRIMARY KEY,
-                    log_channel_id TEXT,
-                    updated_at TEXT
-                )
-            """)
-            
-            await db.commit()
+    def __init__(self, bot: discord.Bot):
+        self.bot = bot
+        self.db_path = DATA_DIR / "stack_bot.db"
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
     
-    async def register_profile(self, user_id: str, username: str, display_name: str, 
-                               birth_year: str, gender: str, region: str) -> bool:
+    async def init_db(self) -> None:
+        """데이터베이스 초기화"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS user_profiles (
+                        user_id TEXT PRIMARY KEY,
+                        username TEXT NOT NULL,
+                        display_name TEXT,
+                        birth_year TEXT,
+                        gender TEXT,
+                        region TEXT,
+                        registered_at TEXT,
+                        updated_at TEXT
+                    )
+                """)
+                
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS admin_info (
+                        user_id TEXT PRIMARY KEY,
+                        warning_count INTEGER DEFAULT 0,
+                        admin_memo TEXT,
+                        updated_at TEXT,
+                        FOREIGN KEY (user_id) REFERENCES user_profiles (user_id)
+                    )
+                """)
+                
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS server_settings (
+                        guild_id TEXT PRIMARY KEY,
+                        log_channel_id TEXT,
+                        updated_at TEXT
+                    )
+                """)
+                
+                await db.commit()
+                logger.info("데이터베이스 초기화 완료")
+        except Exception as e:
+            logger.error(f"데이터베이스 초기화 실패: {e}")
+    
+    async def register_profile(
+        self, user_id: str, username: str, display_name: str, 
+        birth_year: str, gender: str, region: str
+    ) -> bool:
+        """프로필 등록"""
         try:
             now = datetime.now().isoformat()
             async with aiosqlite.connect(self.db_path) as db:
@@ -74,10 +95,11 @@ class Database:
                 await db.commit()
                 return True
         except Exception as e:
-            print(f"[DB 오류] 프로필 등록: {e}")
+            logger.error(f"프로필 등록 실패: {e}")
             return False
     
-    async def get_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_profile(self, user_id: str) -> dict[str, Any] | None:
+        """프로필 조회"""
         try:
             async with aiosqlite.connect(self.db_path) as db:
                 db.row_factory = aiosqlite.Row
@@ -87,10 +109,25 @@ class Database:
                 row = await cursor.fetchone()
                 return dict(row) if row else None
         except Exception as e:
-            print(f"[DB 오류] 프로필 조회: {e}")
+            logger.error(f"프로필 조회 실패: {e}")
             return None
     
-    async def get_admin_info(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_all_profiles(self) -> list[dict[str, Any]]:
+        """전체 프로필 조회"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT * FROM user_profiles ORDER BY display_name ASC"
+                )
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"전체 프로필 조회 실패: {e}")
+            return []
+    
+    async def get_admin_info(self, user_id: str) -> dict[str, Any] | None:
+        """관리자 정보 조회"""
         try:
             async with aiosqlite.connect(self.db_path) as db:
                 db.row_factory = aiosqlite.Row
@@ -100,10 +137,11 @@ class Database:
                 row = await cursor.fetchone()
                 return dict(row) if row else None
         except Exception as e:
-            print(f"[DB 오류] 관리자 정보 조회: {e}")
+            logger.error(f"관리자 정보 조회 실패: {e}")
             return None
     
     async def add_warning(self, user_id: str, count: int = 1) -> bool:
+        """경고 추가"""
         try:
             now = datetime.now().isoformat()
             async with aiosqlite.connect(self.db_path) as db:
@@ -115,10 +153,11 @@ class Database:
                 await db.commit()
                 return True
         except Exception as e:
-            print(f"[DB 오류] 경고 추가: {e}")
+            logger.error(f"경고 추가 실패: {e}")
             return False
     
     async def remove_warning(self, user_id: str, count: int = 1) -> bool:
+        """경고 제거"""
         try:
             now = datetime.now().isoformat()
             async with aiosqlite.connect(self.db_path) as db:
@@ -130,10 +169,11 @@ class Database:
                 await db.commit()
                 return True
         except Exception as e:
-            print(f"[DB 오류] 경고 제거: {e}")
+            logger.error(f"경고 제거 실패: {e}")
             return False
     
     async def set_admin_memo(self, user_id: str, memo: str) -> bool:
+        """관리자 메모 작성"""
         try:
             now = datetime.now().isoformat()
             async with aiosqlite.connect(self.db_path) as db:
@@ -145,10 +185,11 @@ class Database:
                 await db.commit()
                 return True
         except Exception as e:
-            print(f"[DB 오류] 메모 작성: {e}")
+            logger.error(f"메모 작성 실패: {e}")
             return False
     
     async def set_log_channel(self, guild_id: str, channel_id: str) -> bool:
+        """로그 채널 설정"""
         try:
             now = datetime.now().isoformat()
             async with aiosqlite.connect(self.db_path) as db:
@@ -172,10 +213,11 @@ class Database:
                 await db.commit()
                 return True
         except Exception as e:
-            print(f"[DB 오류] 로그 채널 설정: {e}")
+            logger.error(f"로그 채널 설정 실패: {e}")
             return False
     
-    async def get_log_channel(self, guild_id: str) -> Optional[str]:
+    async def get_log_channel(self, guild_id: str) -> str | None:
+        """로그 채널 조회"""
         try:
             async with aiosqlite.connect(self.db_path) as db:
                 cursor = await db.execute(
@@ -184,19 +226,5 @@ class Database:
                 row = await cursor.fetchone()
                 return row[0] if row else None
         except Exception as e:
-            print(f"[DB 오류] 로그 채널 조회: {e}")
+            logger.error(f"로그 채널 조회 실패: {e}")
             return None
-    
-    async def get_all_profiles(self) -> list[Dict[str, Any]]:
-        """등록된 모든 프로필 조회"""
-        try:
-            async with aiosqlite.connect(self.db_path) as db:
-                db.row_factory = aiosqlite.Row
-                cursor = await db.execute(
-                    "SELECT * FROM user_profiles ORDER BY display_name ASC"
-                )
-                rows = await cursor.fetchall()
-                return [dict(row) for row in rows]
-        except Exception as e:
-            print(f"[DB 오류] 전체 프로필 조회: {e}")
-            return []
