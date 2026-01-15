@@ -55,6 +55,22 @@ class DataManager:
                     )
                 """)
                 
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS reaction_roles (
+                        reaction_id TEXT PRIMARY KEY,
+                        message_id TEXT NOT NULL,
+                        channel_id TEXT NOT NULL,
+                        emoji TEXT NOT NULL,
+                        role_id TEXT NOT NULL,
+                        created_at TEXT
+                    )
+                """)
+                
+                await db.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_reaction_message 
+                    ON reaction_roles(message_id)
+                """)
+                
                 await db.commit()
                 logger.info("데이터베이스 초기화 완료")
         except Exception as e:
@@ -228,3 +244,121 @@ class DataManager:
         except Exception as e:
             logger.error(f"로그 채널 조회 실패: {e}")
             return None
+    
+    async def add_reaction_role(
+        self,
+        message_id: int,
+        channel_id: int,
+        emoji: str,
+        role_id: int
+    ) -> str:
+        """이모지-역할 매핑 추가"""
+        try:
+            import random
+            while True:
+                reaction_id = ''.join(random.choices('0123456789ABCDEF', k=6))
+                async with aiosqlite.connect(self.db_path) as db:
+                    cursor = await db.execute(
+                        "SELECT reaction_id FROM reaction_roles WHERE reaction_id = ?",
+                        (reaction_id,)
+                    )
+                    if not await cursor.fetchone():
+                        break
+            
+            now = datetime.now().isoformat()
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    INSERT INTO reaction_roles 
+                    (reaction_id, message_id, channel_id, emoji, role_id, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (reaction_id, str(message_id), str(channel_id), emoji, str(role_id), now))
+                await db.commit()
+                return reaction_id
+        except Exception as e:
+            logger.error(f"반응 역할 추가 실패: {e}")
+            return ""
+    
+    async def remove_reaction_by_id(self, reaction_id: str) -> bool:
+        """반응설정 ID로 매핑 제거"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute(
+                    "DELETE FROM reaction_roles WHERE reaction_id = ?",
+                    (reaction_id,)
+                )
+                await db.commit()
+                return True
+        except Exception as e:
+            logger.error(f"반응 역할 제거 실패: {e}")
+            return False
+    
+    async def get_all_reaction_roles(self) -> dict[str, dict]:
+        """모든 반응설정 조회"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute("SELECT * FROM reaction_roles")
+                rows = await cursor.fetchall()
+                
+                result = {}
+                for row in rows:
+                    result[row['reaction_id']] = {
+                        'message_id': int(row['message_id']),
+                        'channel_id': int(row['channel_id']),
+                        'emoji': row['emoji'],
+                        'role_id': int(row['role_id'])
+                    }
+                return result
+        except Exception as e:
+            logger.error(f"반응 역할 목록 조회 실패: {e}")
+            return {}
+    
+    async def get_reaction_role_by_id(self, reaction_id: str) -> dict | None:
+        """반응설정 ID로 조회"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT * FROM reaction_roles WHERE reaction_id = ?",
+                    (reaction_id,)
+                )
+                row = await cursor.fetchone()
+                if row:
+                    return {
+                        'message_id': int(row['message_id']),
+                        'channel_id': int(row['channel_id']),
+                        'emoji': row['emoji'],
+                        'role_id': int(row['role_id'])
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"반응 역할 조회 실패: {e}")
+            return None
+    
+    async def get_role_for_reaction(self, message_id: int, emoji: str) -> int | None:
+        """이모지에 해당하는 역할 ID 조회"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    "SELECT role_id FROM reaction_roles WHERE message_id = ? AND emoji = ?",
+                    (str(message_id), emoji)
+                )
+                row = await cursor.fetchone()
+                return int(row[0]) if row else None
+        except Exception as e:
+            logger.error(f"역할 조회 실패: {e}")
+            return None
+    
+    async def is_reaction_message(self, message_id: int) -> bool:
+        """역할 인증 메시지인지 확인"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    "SELECT COUNT(*) FROM reaction_roles WHERE message_id = ?",
+                    (str(message_id),)
+                )
+                row = await cursor.fetchone()
+                return row[0] > 0 if row else False
+        except Exception as e:
+            logger.error(f"메시지 확인 실패: {e}")
+            return False

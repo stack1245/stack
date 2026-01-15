@@ -6,6 +6,7 @@ __all__ = [
     "DATA_DIR",
     "COLORS",
     "DEFAULT_ACTIVITY_NAME",
+    "AUTO_SAVE_INTERVAL",
     "DEFAULT_SETTINGS",
 ]
 
@@ -23,6 +24,7 @@ COLORS = {
 
 # 봇 설정
 DEFAULT_ACTIVITY_NAME = "기록 남기는 중..."
+AUTO_SAVE_INTERVAL: int = 300  # 5분
 
 # 기본 설정
 DEFAULT_SETTINGS = {

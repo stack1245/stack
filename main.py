@@ -25,6 +25,7 @@ class StackBot(discord.Bot):
         intents.members = True
         intents.messages = True
         intents.guilds = True
+        intents.reactions = True
         
         super().__init__(intents=intents)
         
@@ -49,6 +50,76 @@ class StackBot(discord.Bot):
         else:
             logger.error(f"명령어 오류: {error}")
             await ctx.respond("명령어 실행 중 오류가 발생했습니다.", ephemeral=True)
+    
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        """이모지 추가 시 역할 지급"""
+        if payload.user_id == self.user.id:
+            return
+        
+        if not await self.data_manager.is_reaction_message(payload.message_id):
+            return
+        
+        emoji = str(payload.emoji)
+        role_id = await self.data_manager.get_role_for_reaction(payload.message_id, emoji)
+        
+        if not role_id:
+            return
+        
+        try:
+            guild = self.get_guild(payload.guild_id)
+            if not guild:
+                return
+            
+            member = guild.get_member(payload.user_id)
+            if not member:
+                return
+            
+            role = guild.get_role(role_id)
+            if not role:
+                logger.warning(f"역할을 찾을 수 없음: {role_id}")
+                return
+            
+            if role not in member.roles:
+                await member.add_roles(role)
+        except discord.Forbidden:
+            logger.error(f"역할 지급 권한 없음: {role_id}")
+        except Exception as e:
+            logger.error(f"역할 지급 실패: {e}")
+    
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        """이모지 제거 시 역할 회수"""
+        if payload.user_id == self.user.id:
+            return
+        
+        if not await self.data_manager.is_reaction_message(payload.message_id):
+            return
+        
+        emoji = str(payload.emoji)
+        role_id = await self.data_manager.get_role_for_reaction(payload.message_id, emoji)
+        
+        if not role_id:
+            return
+        
+        try:
+            guild = self.get_guild(payload.guild_id)
+            if not guild:
+                return
+            
+            member = guild.get_member(payload.user_id)
+            if not member:
+                return
+            
+            role = guild.get_role(role_id)
+            if not role:
+                logger.warning(f"역할을 찾을 수 없음: {role_id}")
+                return
+            
+            if role in member.roles:
+                await member.remove_roles(role)
+        except discord.Forbidden:
+            logger.error(f"역할 회수 권한 없음: {role_id}")
+        except Exception as e:
+            logger.error(f"역할 회수 실패: {e}")
 
 
 def main():
