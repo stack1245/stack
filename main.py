@@ -284,10 +284,8 @@ class StackBot(discord.Bot):
 
 def main():
     """메인 진입점"""
-    # Python 3.14+ 이벤트 루프 생성
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
+    # Python 3.10+ 호환 이벤트 루프 설정
+    if not asyncio._get_running_loop():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     
