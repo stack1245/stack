@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from utils.extension_loader import ExtensionLoader
 from utils.data_manager import DataManager
-from utils.constants import AUTO_SAVE_INTERVAL, DEFAULT_ACTIVITY_NAME, COLORS
+from utils.constants import DEFAULT_ACTIVITY_NAME, COLORS
 from utils.graceful_shutdown import setup_graceful_shutdown, register_shutdown_callback
 from utils.logging_config import configure_logging
 
@@ -185,7 +185,6 @@ class StackBot(discord.Bot):
         self.data_manager = DataManager(self)
         self.extension_loader = ExtensionLoader(self)
         self._commands_loaded = False
-        self._auto_save_task: Optional[asyncio.Task] = None
 
     async def on_ready(self) -> None:
         """봇 준비 완료"""
@@ -213,19 +212,6 @@ class StackBot(discord.Bot):
         except Exception as e:
             logger.error(f"상태 변경 실패: {e}")
 
-        if not self._auto_save_task:
-            self._auto_save_task = self.loop.create_task(self._auto_save_loop())
-
-    async def _auto_save_loop(self) -> None:
-        """주기적 데이터 저장"""
-        await self.wait_until_ready()
-        while not self.is_closed():
-            await asyncio.sleep(AUTO_SAVE_INTERVAL)
-            try:
-                await self.data_manager.save_data()
-            except Exception as e:
-                logger.error(f"자동 저장 실패: {e}")
-
     async def on_application_command_error(
         self, ctx: discord.ApplicationContext, error: discord.DiscordException
     ) -> None:
@@ -240,13 +226,7 @@ class StackBot(discord.Bot):
 
     async def close(self) -> None:
         """봇 종료 처리"""
-        if self._auto_save_task:
-            self._auto_save_task.cancel()
-
-        try:
-            await self.data_manager.close()
-        except Exception as e:
-            logger.error(f"종료 시 저장 실패: {e}")
+        logger.info("봇 종료 중...")
 
         await super().close()
 
