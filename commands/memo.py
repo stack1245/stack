@@ -18,7 +18,7 @@ class MemoCommand(commands.Cog):
         self.bot = bot
         self.data_manager = bot.data_manager
     
-    @discord.slash_command(name="메모작성", description="유저에 대한 관리자 메모를 작성합니다")
+    @discord.slash_command(name="메모", description="유저에 대한 관리자 메모를 작성합니다")
     @commands.has_permissions(administrator=True)
     async def set_memo(
         self,
