@@ -236,8 +236,6 @@ class StackBot(discord.Bot):
 
     async def close(self) -> None:
         """봇 종료 처리"""
-        logger.info("봇 종료 중...")
-
         await super().close()
 
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
