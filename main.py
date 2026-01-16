@@ -204,6 +204,13 @@ class StackBot(discord.Bot):
         
         self.extension_loader.load_all_extensions()
         
+        # 명령어 동기화
+        try:
+            await self.sync_commands()
+            logger.info("명령어 동기화 완료")
+        except Exception as e:
+            logger.error(f"명령어 동기화 실패: {e}")
+        
         print(f"[{self.user.name}] 준비 완료")
     
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error):
