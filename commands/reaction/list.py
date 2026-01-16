@@ -1,25 +1,18 @@
 """반응 역할 목록 조회"""
 from __future__ import annotations
 import discord
-from discord.ext import commands
 
 from utils.constants import COLORS
 from . import reaction_group
 
 
-class ListReactions(commands.Cog):
-    """반응 역할 목록 조회"""
-    
-    def __init__(self, bot: discord.Bot):
-        self.bot = bot
-    
-    @reaction_group.command(
-        name="목록",
-        description="현재 설정된 모든 반응 역할 목록을 확인합니다"
-    )
-    async def list_reactions(self, ctx: discord.ApplicationContext):
-        """모든 반응설정 목록 조회"""
-        all_reactions = await self.bot.data_manager.get_all_reaction_roles()
+@reaction_group.command(
+    name="목록",
+    description="현재 설정된 모든 반응 역할 목록을 확인합니다"
+)
+async def list_reactions(ctx: discord.ApplicationContext):
+    """모든 반응설정 목록 조회"""
+    all_reactions = await ctx.bot.data_manager.get_all_reaction_roles()
         
         if not all_reactions:
             await ctx.respond("❌ 등록된 반응 역할 설정이 없습니다.", ephemeral=True)
@@ -38,7 +31,7 @@ class ListReactions(commands.Cog):
         )
         
         for channel_id, reactions in by_channel.items():
-            channel = self.bot.get_channel(channel_id)
+            channel = ctx.bot.get_channel(channel_id)
             channel_name = channel.mention if channel else f"<#{channel_id}>"
             
             lines = []

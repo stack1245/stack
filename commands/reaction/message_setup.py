@@ -55,17 +55,11 @@ class SetupModal(discord.ui.Modal):
         await interaction.channel.send(embed=embed)
 
 
-class MessageSetup(commands.Cog):
-    """역할 인증 메시지 생성"""
-    
-    def __init__(self, bot: discord.Bot):
-        self.bot = bot
-    
-    @reaction_group.command(
-        name="메시지생성",
-        description="역할 인증 메시지를 생성합니다"
-    )
-    async def setup_message(self, ctx: discord.ApplicationContext):
-        """역할 인증 메시지 생성 모달 열기"""
-        modal = SetupModal()
-        await ctx.send_modal(modal)
+@reaction_group.command(
+    name="메시지생성",
+    description="역할 인증 메시지를 생성합니다"
+)
+async def setup_message(ctx: discord.ApplicationContext):
+    """역할 인증 메시지 생성 모달 열기"""
+    modal = SetupModal()
+    await ctx.send_modal(modal)

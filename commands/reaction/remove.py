@@ -1,29 +1,21 @@
 """반응 역할 제거"""
 from __future__ import annotations
 import discord
-from discord.ext import commands
 
 from utils.constants import COLORS
 from . import reaction_group
 
 
-class RemoveReaction(commands.Cog):
-    """반응 역할 제거"""
-    
-    def __init__(self, bot: discord.Bot):
-        self.bot = bot
-    
-    @reaction_group.command(
-        name="제거",
-        description="반응설정 ID로 반응 역할 설정을 제거합니다"
-    )
-    async def remove_reaction(
-        self,
-        ctx: discord.ApplicationContext,
-        reaction_id: str = discord.Option(str, description="반응설정 ID (/반응 목록에서 확인)")
-    ):
-        """반응설정 ID로 매핑 제거"""
-        reaction_data = await self.bot.data_manager.get_reaction_role_by_id(reaction_id)
+@reaction_group.command(
+    name="제거",
+    description="반응설정 ID로 반응 역할 설정을 제거합니다"
+)
+async def remove_reaction(
+    ctx: discord.ApplicationContext,
+    reaction_id: str = discord.Option(str, description="반응설정 ID (/반응 목록에서 확인)")
+):
+    """반응설정 ID로 매핑 제거"""
+    reaction_data = await ctx.bot.data_manager.get_reaction_role_by_id(reaction_id)
         
         if not reaction_data:
             await ctx.respond(
@@ -39,14 +31,14 @@ class RemoveReaction(commands.Cog):
         role_id = reaction_data["role_id"]
         
         try:
-            channel = self.bot.get_channel(channel_id)
+            channel = ctx.bot.get_channel(channel_id)
             if channel:
                 message = await channel.fetch_message(message_id)
                 await message.clear_reaction(emoji)
         except Exception:
             pass
         
-        if await self.bot.data_manager.remove_reaction_by_id(reaction_id):
+        if await ctx.bot.data_manager.remove_reaction_by_id(reaction_id):
             role = ctx.guild.get_role(role_id) if ctx.guild else None
             role_name = role.mention if role else f"<@&{role_id}>"
             
