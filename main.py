@@ -27,7 +27,7 @@ class AuthenticationView(discord.ui.View):
         self.role_id = role_id
     
     @discord.ui.button(label="프로필 입력", style=discord.ButtonStyle.primary)
-    async def authenticate(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def authenticate(self, button: discord.ui.Button, interaction: discord.Interaction):
         """프로필 입력 모달 표시"""
         modal = AuthenticationModal(self.bot, self.guild_id, self.role_id)
         await interaction.response.send_modal(modal)
