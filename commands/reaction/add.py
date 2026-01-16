@@ -66,7 +66,8 @@ class AddReaction(commands.Cog):
                 f"**메시지 ID:** `{message_id}`\n"
                 f"**반응:** {reaction}\n"
                 f"**역할:** {role.mention}\n\n"
-                f"해당 반응을 누르면 역할이 지급되고,\n"
+                f"해당 반응을 누르면 프로필 입력 모달이 표시되며,\n"
+                f"프로필 정보를 모두 입력하면 역할이 지급됩니다.\n"
                 f"반응을 제거하면 역할이 회수됩니다."
             ),
             color=COLORS["SUCCESS"]

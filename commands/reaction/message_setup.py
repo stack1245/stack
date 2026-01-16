@@ -52,7 +52,10 @@ class SetupModal(discord.ui.Modal):
             embed.title = title
         
         await interaction.response.send_message(
-            "✅ 역할 인증 메시지를 생성했습니다.",
+            embed=discord.Embed(
+                description="역할 인증 메시지가 생성되었습니다.",
+                color=COLORS["SUCCESS"]
+            ),
             ephemeral=True
         )
         await interaction.channel.send(embed=embed)
