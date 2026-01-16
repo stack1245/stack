@@ -1,23 +1,19 @@
 """로그 채널 설정 명령어"""
 from __future__ import annotations
-import discord
-from discord.ext import commands
+
 from discord import Option
+from discord.ext import commands
+import discord
 from datetime import datetime
-from zoneinfo import ZoneInfo
-
 from utils.constants import COLORS
-
+from zoneinfo import ZoneInfo
 KST = ZoneInfo("Asia/Seoul")
-
-
 class LogChannelCommand(commands.Cog):
     """로그 채널 설정 명령어"""
-    
-    def __init__(self, bot: discord.Bot):
+    def __init__(self, bot: discord.Bot) -> None:
+        """초기화"""
         self.bot = bot
         self.data_manager = bot.data_manager
-    
     @discord.slash_command(name="로그채널설정", description="로그를 보낼 채널을 설정합니다")
     @commands.has_permissions(administrator=True)
     async def set_log_channel(
@@ -27,9 +23,7 @@ class LogChannelCommand(commands.Cog):
     ):
         guild_id = str(ctx.guild.id)
         channel_id = str(채널.id)
-        
         success = await self.data_manager.set_log_channel(guild_id, channel_id)
-        
         if success:
             embed = discord.Embed(
                 title="로그 채널 설정 완료",
@@ -41,7 +35,6 @@ class LogChannelCommand(commands.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         else:
             await ctx.respond("로그 채널 설정 중 오류가 발생했습니다.", ephemeral=True)
-
-
 def setup(bot: discord.Bot):
+    """명령어 로드"""
     bot.add_cog(LogChannelCommand(bot))
