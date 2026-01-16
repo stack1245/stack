@@ -23,7 +23,7 @@ class AuthenticationView(discord.ui.View):
     """인증 버튼 View"""
 
     def __init__(self, bot: discord.Bot, guild_id: int, role_id: int) -> None:
-        super().__init__(timeout=None)
+        super().__init__(timeout=300)
         self.bot = bot
         self.guild_id = guild_id
         self.role_id = role_id

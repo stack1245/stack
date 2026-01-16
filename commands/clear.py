@@ -64,6 +64,7 @@ class ClearCommand(commands.Cog):
             await ctx.respond("메시지를 삭제할 권한이 없습니다.", ephemeral=True)
         except discord.HTTPException as e:
             await ctx.respond(f"메시지 삭제 중 오류가 발생했습니다: {e}", ephemeral=True)
+
 def setup(bot: discord.Bot):
     """명령어 로드"""
     bot.add_cog(ClearCommand(bot))
