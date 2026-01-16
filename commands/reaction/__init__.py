@@ -34,8 +34,13 @@ def setup(bot: discord.Bot):
             
             # 모듈 내의 모든 Cog 클래스 탐색 및 로드
             for name, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, commands.Cog) and obj is not commands.Cog:
-                    bot.add_cog(obj(bot))
+                # Cog인지 확인 (obj가 실제 클래스이고, commands.Cog의 서브클래스인지)
+                try:
+                    if obj is not commands.Cog and issubclass(obj, commands.Cog):
+                        bot.add_cog(obj(bot))
+                except (TypeError, AttributeError):
+                    # issubclass가 실패하면 무시
+                    continue
         except Exception as e:
             print(f"⚠️ {module_name} 로드 실패: {e}")
     
