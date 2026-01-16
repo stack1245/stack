@@ -200,8 +200,11 @@ class StackBot(discord.Bot):
             
             # 로드 실패시만 로그
             if self.extension_loader.failed_extensions:
-                for ext_name, error in self.extension_loader.failed_extensions:
+                for ext_name, error in self.extension_loader.failed_extensions.items():
                     logger.error(f"명령어 로드 실패: {ext_name}\n{error}")
+            
+            # 명령어 동기화
+            await self.sync_commands()
             
             self._initialized = True
             print(f"[{self.user.name}] 준비 완료")
