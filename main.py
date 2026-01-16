@@ -1,9 +1,7 @@
 """Stack Bot - 사용자 프로필 및 서버 관리 봇"""
 from __future__ import annotations
 import asyncio
-import logging
 import os
-from typing import Optional
 
 import discord
 from dotenv import load_dotenv
@@ -16,6 +14,8 @@ from utils.logging_config import configure_logging
 
 load_dotenv()
 configure_logging()
+
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -184,24 +184,34 @@ class StackBot(discord.Bot):
 
         self.data_manager = DataManager(self)
         self.extension_loader = ExtensionLoader(self)
-        self._commands_loaded = False
+        self._initialized = False
 
     async def on_ready(self) -> None:
         """봇 준비 완료"""
-        if not self.user:
+        if self._initialized or not self.user:
             return
 
-        if not self._commands_loaded:
-            try:
-                await self.data_manager.init_db()
-                self.extension_loader.load_all_extensions("commands")
-                await self.sync_commands()
-                self._commands_loaded = True
-                print(f"[{self.user.name}] 준비 완료")
-            except Exception as e:
-                logger.error(f"초기화 실패: {e}")
-                return
+        try:
+            # 데이터베이스 초기화
+            await self.data_manager.init_db()
+            
+            # 명령어 로드
+            self.extension_loader.load_all_extensions("commands")
+            
+            # 로드 실패시만 로그
+            if self.extension_loader.failed_extensions:
+                for ext_name, error in self.extension_loader.failed_extensions:
+                    logger.error(f"명령어 로드 실패: {ext_name}\n{error}")
+            
+            self._initialized = True
+            print(f"[{self.user.name}] 준비 완료")
+            
+        except Exception as e:
+            logger.error(f"봇 초기화 실패: {e}", exc_info=e)
+            await self.close()
+            return
 
+        # 활동 상태 설정
         try:
             await self.change_presence(
                 activity=discord.Activity(
@@ -298,9 +308,14 @@ class StackBot(discord.Bot):
 
 def main() -> None:
     """봇 실행"""
+    import sys
+    
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
     token = os.getenv("DISCORD_TOKEN")
     if not token:
-        logger.error("DISCORD_TOKEN이 설정되지 않았습니다.")
+        logger.error("DISCORD_TOKEN 미설정")
         return
 
     bot = StackBot()
