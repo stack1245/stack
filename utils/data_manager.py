@@ -72,7 +72,6 @@ class DataManager:
                 """)
                 
                 await db.commit()
-                logger.info("데이터베이스 초기화 완료")
         except Exception as e:
             logger.error(f"데이터베이스 초기화 실패: {e}")
     
