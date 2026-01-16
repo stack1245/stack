@@ -53,15 +53,6 @@ class AuthenticationModal(discord.ui.Modal):
         
         self.add_item(
             discord.ui.InputText(
-                label="표시 이름",
-                placeholder="표시될 이름을 입력하세요",
-                required=True,
-                max_length=50
-            )
-        )
-        
-        self.add_item(
-            discord.ui.InputText(
                 label="출생년도",
                 placeholder="예: 2000",
                 required=True,
@@ -93,15 +84,14 @@ class AuthenticationModal(discord.ui.Modal):
         
         user_id = str(interaction.user.id)
         username = self.children[0].value.strip()
-        display_name = self.children[1].value.strip()
-        birth_year = self.children[2].value.strip()
-        gender = self.children[3].value.strip()
-        region = self.children[4].value.strip()
+        birth_year = self.children[1].value.strip()
+        gender = self.children[2].value.strip()
+        region = self.children[3].value.strip()
         
         try:
-            # 프로필 등록
+            # 프로필 등록 (display_name은 username과 동일하게 설정)
             success = await self.bot.data_manager.register_profile(
-                user_id, username, display_name, birth_year, gender, region
+                user_id, username, username, birth_year, gender, region
             )
             
             if not success:
@@ -154,7 +144,7 @@ class AuthenticationModal(discord.ui.Modal):
             await interaction.followup.send(
                 embed=discord.Embed(
                     title="✅ 인증 완료",
-                    description=f"**{display_name}**님의 인증이 완료되었습니다.\n역할 **{role.mention}**이(가) 지급되었습니다.",
+                    description=f"**{username}**님의 인증이 완료되었습니다.\n역할 **{role.mention}**이(가) 지급되었습니다.",
                     color=COLORS["SUCCESS"]
                 ),
                 ephemeral=True
