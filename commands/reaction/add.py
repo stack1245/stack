@@ -72,8 +72,3 @@ class AddReaction(commands.Cog):
             color=COLORS["SUCCESS"]
         )
         await ctx.respond(embed=embed, ephemeral=True)
-
-
-def setup(bot: discord.Bot):
-    """Cog 로드"""
-    bot.add_cog(AddReaction(bot))

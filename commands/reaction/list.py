@@ -74,8 +74,3 @@ class ListReactions(commands.Cog):
         
         embed.set_footer(text=f"총 {len(all_reactions)}개의 반응 역할 설정")
         await ctx.respond(embed=embed, ephemeral=True)
-
-
-def setup(bot: discord.Bot):
-    """Cog 로드"""
-    bot.add_cog(ListReactions(bot))

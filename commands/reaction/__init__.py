@@ -1,0 +1,32 @@
+"""그룹 명령어 동적 로더"""
+from __future__ import annotations
+import discord
+from discord.ext import commands
+import importlib
+import inspect
+from pathlib import Path
+
+
+def setup(bot: discord.Bot):
+    """현재 폴더의 모든 Cog를 동적으로 로드"""
+    current_dir = Path(__file__).parent
+    
+    # 현재 디렉토리의 모든 .py 파일 탐색
+    for file_path in current_dir.glob("*.py"):
+        # __init__.py는 제외
+        if file_path.name.startswith("__"):
+            continue
+        
+        # 모듈명 생성 (예: commands.group.sub_command)
+        module_name = f"commands.{current_dir.name}.{file_path.stem}"
+        
+        try:
+            # 모듈 동적 import
+            module = importlib.import_module(module_name)
+            
+            # 모듈 내의 모든 Cog 클래스 탐색 및 로드
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if issubclass(obj, commands.Cog) and obj is not commands.Cog:
+                    bot.add_cog(obj(bot))
+        except Exception as e:
+            print(f"⚠️ {module_name} 로드 실패: {e}")

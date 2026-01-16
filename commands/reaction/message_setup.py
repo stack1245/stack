@@ -72,8 +72,3 @@ class MessageSetup(commands.Cog):
         """역할 인증 메시지 생성 모달 열기"""
         modal = SetupModal()
         await ctx.send_modal(modal)
-
-
-def setup(bot: discord.Bot):
-    """Cog 로드"""
-    bot.add_cog(MessageSetup(bot))

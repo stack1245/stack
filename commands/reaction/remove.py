@@ -70,8 +70,3 @@ class RemoveReaction(commands.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         else:
             await ctx.respond("❌ 반응설정 제거에 실패했습니다.", ephemeral=True)
-
-
-def setup(bot: discord.Bot):
-    """Cog 로드"""
-    bot.add_cog(RemoveReaction(bot))
