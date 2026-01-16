@@ -4,13 +4,7 @@ import discord
 from discord.ext import commands
 
 from utils.constants import COLORS
-
-
-reaction_group = discord.SlashCommandGroup(
-    name="반응",
-    description="역할 반응 관리 명령어",
-    default_member_permissions=discord.Permissions(administrator=True)
-)
+from . import reaction_group
 
 
 class RemoveReaction(commands.Cog):

@@ -207,7 +207,6 @@ class StackBot(discord.Bot):
         # 명령어 동기화
         try:
             await self.sync_commands()
-            logger.info("명령어 동기화 완료")
         except Exception as e:
             logger.error(f"명령어 동기화 실패: {e}")
         

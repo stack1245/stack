@@ -7,6 +7,14 @@ import inspect
 from pathlib import Path
 
 
+# 공유 그룹 정의
+reaction_group = discord.SlashCommandGroup(
+    name="반응",
+    description="역할 반응 관리 명령어",
+    default_member_permissions=discord.Permissions(administrator=True)
+)
+
+
 def setup(bot: discord.Bot):
     """현재 폴더의 모든 Cog를 동적으로 로드"""
     current_dir = Path(__file__).parent
@@ -30,3 +38,6 @@ def setup(bot: discord.Bot):
                     bot.add_cog(obj(bot))
         except Exception as e:
             print(f"⚠️ {module_name} 로드 실패: {e}")
+    
+    # 그룹을 bot에 추가
+    bot.add_application_command(reaction_group)
