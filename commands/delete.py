@@ -41,6 +41,12 @@ class DeleteCommand(commands.Cog):
             deleted_by = message.author.mention
             await message.delete()
             
+            # 채널 정보 (DM인 경우 처리)
+            if isinstance(ctx.channel, discord.DMChannel):
+                channel_info = "다이렉트 메시지"
+            else:
+                channel_info = ctx.channel.mention
+            
             embed = discord.Embed(
                 title="메시지 삭제 완료",
                 description=f"메시지가 삭제되었습니다.",
@@ -48,7 +54,7 @@ class DeleteCommand(commands.Cog):
                 timestamp=datetime.now(KST)
             )
             embed.add_field(name="메시지 작성자", value=deleted_by, inline=True)
-            embed.add_field(name="채널", value=ctx.channel.mention, inline=True)
+            embed.add_field(name="채널", value=channel_info, inline=True)
             embed.add_field(name="실행자", value=ctx.author.mention, inline=True)
             embed.set_footer(text=f"처리자: {ctx.author}")
             await ctx.respond(embed=embed, ephemeral=True)
