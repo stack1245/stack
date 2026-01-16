@@ -1,5 +1,6 @@
 """Stack Bot - 사용자 프로필 및 서버 관리 봇"""
 from __future__ import annotations
+import asyncio
 import logging
 import os
 import discord
@@ -283,6 +284,13 @@ class StackBot(discord.Bot):
 
 def main():
     """메인 진입점"""
+    # Python 3.14+ 이벤트 루프 생성
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
     setup_graceful_shutdown()
     
     token = os.getenv("DISCORD_TOKEN")
