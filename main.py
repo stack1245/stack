@@ -69,7 +69,7 @@ class AuthenticationModal(discord.ui.Modal):
                 label="성별",
                 placeholder="예: 남/여",
                 required=True,
-                max_length=1
+                max_length=10
             )
         )
 
