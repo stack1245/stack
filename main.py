@@ -256,9 +256,14 @@ class StackBot(discord.Bot):
             return
 
         try:
+            # 캐시에서 먼저 찾기, 없으면 API에서 조회
             user = self.get_user(payload.user_id)
             if not user:
-                return
+                try:
+                    user = await self.fetch_user(payload.user_id)
+                except discord.NotFound:
+                    logger.warning(f"사용자를 찾을 수 없음: {payload.user_id}")
+                    return
 
             embed = discord.Embed(
                 description="인증을 진행하려면 아래 버튼을 클릭하여 프로필 정보를 입력해주세요.",
@@ -266,10 +271,13 @@ class StackBot(discord.Bot):
             )
             view = AuthenticationView(self, payload.guild_id, role_id)
             await user.send(embed=embed, view=view)
+            logger.info(f"DM 전송 성공: {payload.user_id}")
         except discord.Forbidden:
-            logger.error(f"DM 전송 실패: {payload.user_id}")
+            logger.warning(f"DM 전송 실패 (권한 부족): {payload.user_id} - 사용자가 DM을 차단했을 수 있습니다.")
+        except discord.HTTPException as e:
+            logger.error(f"DM 전송 실패 (HTTP 오류): {payload.user_id} - {e.status}: {e.text}")
         except Exception as e:
-            logger.error(f"모달 표시 실패: {e}")
+            logger.error(f"DM 전송 실패: {payload.user_id} - {type(e).__name__}: {e}")
 
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
         """이모지 제거 시 역할 회수"""
