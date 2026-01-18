@@ -271,7 +271,6 @@ class StackBot(discord.Bot):
             )
             view = AuthenticationView(self, payload.guild_id, role_id)
             await user.send(embed=embed, view=view)
-            logger.info(f"DM 전송 성공: {payload.user_id}")
         except discord.Forbidden:
             logger.warning(f"DM 전송 실패 (권한 부족): {payload.user_id} - 사용자가 DM을 차단했을 수 있습니다.")
         except discord.HTTPException as e:
