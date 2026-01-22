@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from utils.extension_loader import ExtensionLoader
 from utils.data_manager import DataManager
-from utils.constants import DEFAULT_ACTIVITY_NAME, COLORS
+from utils.constants import DEFAULT_ACTIVITY_NAME, COLORS, GENDER_ROLES, AGE_ROLES, get_age_category
 from utils.graceful_shutdown import setup_graceful_shutdown, register_shutdown_callback
 from utils.logging_config import configure_logging
 
@@ -142,6 +142,21 @@ class AuthenticationModal(discord.ui.Modal):
 
             if role not in member.roles:
                 await member.add_roles(role)
+
+            # 성별에 따른 역할 지급
+            gender_role_id = GENDER_ROLES.get(gender)
+            if gender_role_id:
+                gender_role = guild.get_role(gender_role_id)
+                if gender_role and gender_role not in member.roles:
+                    await member.add_roles(gender_role)
+
+            # 나이에 따른 역할 지급
+            age_category = get_age_category(birth_year)
+            age_role_id = AGE_ROLES.get(age_category)
+            if age_role_id:
+                age_role = guild.get_role(age_role_id)
+                if age_role and age_role not in member.roles:
+                    await member.add_roles(age_role)
 
             await interaction.followup.send(
                 embed=discord.Embed(

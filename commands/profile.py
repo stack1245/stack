@@ -5,7 +5,7 @@ from discord import Option
 from discord.ext import commands
 import discord
 from datetime import datetime
-from utils.constants import COLORS
+from utils.constants import COLORS, GENDER_ROLES, AGE_ROLES, get_age_category
 from zoneinfo import ZoneInfo
 KST = ZoneInfo("Asia/Seoul")
 
@@ -97,6 +97,43 @@ class ProfileCommands(commands.Cog):
             embed.add_field(name="출생년도", value=출생년도, inline=True)
             embed.add_field(name="성별", value=성별, inline=True)
             embed.add_field(name="지역", value=지역, inline=True)
+            
+            # 성별 및 나이에 따른 역할 자동 지급
+            try:
+                guild = ctx.guild
+                member = guild.get_member(target_user.id)
+                
+                if member:
+                    roles_added = []
+                    
+                    # 성별에 따른 역할 지급
+                    if 성별 in GENDER_ROLES:
+                        gender_role_id = GENDER_ROLES[성별]
+                        gender_role = guild.get_role(gender_role_id)
+                        if gender_role and gender_role not in member.roles:
+                            await member.add_roles(gender_role)
+                            roles_added.append(gender_role.name)
+                    
+                    # 나이에 따른 역할 지급
+                    age_category = get_age_category(출생년도)
+                    age_role_id = AGE_ROLES.get(age_category)
+                    if age_role_id:
+                        age_role = guild.get_role(age_role_id)
+                        if age_role and age_role not in member.roles:
+                            await member.add_roles(age_role)
+                            roles_added.append(age_role.name)
+                    
+                    if roles_added:
+                        embed.add_field(
+                            name="지급된 역할",
+                            value=", ".join(roles_added),
+                            inline=False
+                        )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"역할 자동 지급 실패: {e}")
+            
             embed.set_footer(text=f"등록자: {ctx.author}")
             await ctx.respond(embed=embed)
         else:
