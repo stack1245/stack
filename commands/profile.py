@@ -124,18 +124,9 @@ class ProfileCommands(commands.Cog):
             
             profile_list = []
             for i, profile in enumerate(page_profiles, start=start_idx + 1):
-                user_id = int(profile['user_id'])
-                member = ctx.guild.get_member(user_id)
-                
-                if member:
-                    user_display = member.mention
-                else:
-                    # 서버에 없는 유저는 username 표시
-                    username = profile.get('username', f'Unknown#{user_id}')
-                    user_display = f"`{username}`"
-                
+                user_mention = f"<@{profile['user_id']}>"
                 display_name = profile['display_name']
-                profile_list.append(f"{i}. **{display_name}** - {user_display}")
+                profile_list.append(f"{i}. **{display_name}** - {user_mention}")
             
             embed.add_field(
                 name="유저 목록",
